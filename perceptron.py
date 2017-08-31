@@ -54,7 +54,7 @@ class Perceptron(object):
             Args:
                 training_set_portion:  A float between 0 and 1.
             Raises:
-                DatasetError: If `training_set_portion` is not between 0 and 1.
+                PerceptronError: If `training_set_portion` is not between 0 and 1.
         """
         if not 0 < training_set_portion <= 1:
             raise PerceptronError(TRAINING_SET_PORTION_ERROR)
@@ -102,6 +102,8 @@ class Perceptron(object):
             inputs: It is a list tha contains the inputs values.
         Returns:
             It returns an integer.
+        Raises:
+                PerceptronError: If perceptron is not trained.
         """
         if self.is_trained:
             inputs = np.array([self.bias] + inputs)
