@@ -17,6 +17,7 @@ from CustomExceptions import PerceptronError
 
 TRAINING_SET_PORTION_ERROR = "The argument `training_set_portion` should be a float" + \
                              " between 0 and 1."
+PERCEPTRON_IS_NOT_TRAINED = "Before classifying the perceptron should be trained."
 
 
 def hardlim(x):
@@ -25,7 +26,7 @@ def hardlim(x):
 
 class Perceptron(object):
 
-    def __init__(self, arrf_file_path, learning_rate=0.5, training_set_portion=1.0,
+    def __init__(self, arff_file_path, learning_rate=0.5, training_set_portion=1.0,
                  max_iterations=3):
         """Class contructor
             Args:
@@ -37,14 +38,13 @@ class Perceptron(object):
         self._validates_training_set_portion(training_set_portion)
 
         self.bias = -1
+        self.learning_rate = learning_rate
+        self.training_set_portion = training_set_portion
+        self.max_iterations = max_iterations
+        self.arff_file = arff.loads(open(arff_file_path, "r"))
+        self.is_trained = False
 
-        arff_file = arff.loads(open(arrf_file_path, "r"))
-        inputs_qty = len(arff_file["attributes"])
-        self._initialize_weights(inputs_qty)
-
-        entries = arff_file["data"]
-        index = ceil(len(entries) * training_set_portion)
-        self._train_perceptron(entries[:index], learning_rate, max_iterations)
+        self._initialize_weights()
 
     # ##############
     # # VALIDATORS #
@@ -63,54 +63,50 @@ class Perceptron(object):
     # # PRIVATE METHODS #
     # ###################
 
-    def _initialize_weights(self, inputs_qty):
-        """Method which initializes all perceptron's weights randomly.
-            Args:
-               inputs_qty: The quantity of inputs a perceptron have.
-            Returns:
-               None
-        """
+    def _initialize_weights(self):
+        """Method which initializes all perceptron's weights randomly."""
+        inputs_qty = len(self.arff_file["attributes"])
         self.weights = np.array([random() for _ in range(inputs_qty)])
-
-    def _train_perceptron(self, entries, learning_rate, max_iterations):
-        """Method which trains the perceptron.
-            Args:
-                entries: Entries to train the perceptron.
-                learning_rate: A float which is the learning_rate.
-                max_iterations: The maximun number of iterations during training.
-            Returns:
-                None
-        """
-        for _ in range(max_iterations):
-
-            adjusted_weights = False
-
-            for entry in entries:
-                inputs, desired_output = np.array([self.bias] + entry[:-1]), entry[:-1]
-                summatory = sum(inputs * self.weights)
-                output = hardlim(summatory)
-
-                if desired_output != output:
-                    self.weights += learning_rate * (desired_output - output) * inputs
-                    adjusted_weights = True
-
-            if not adjusted_weights:
-                break
 
     # ###################
     # # PUBLIC METHODS #
     # ###################
 
-    def classify_entry(self, inputs):
+    def train(self):
+        """Method which trains the perceptron."""
+
+        entries = self.arff_file["data"]
+        index = ceil(len(entries) * self.training_set_portion)
+        entries = entries[:index]
+
+        for _ in range(self.max_iterations):
+            adjusted_weights = False
+
+            for entry in entries:
+                inputs, desired_output = np.array([self.bias] + entry[:-1]), float(entry[-1])
+                summatory = sum(inputs * self.weights)
+                output = hardlim(summatory)
+
+                if desired_output != output:
+                    self.weights += self.learning_rate * (desired_output - output) * inputs
+                    adjusted_weights = True
+
+            if not adjusted_weights:
+                break
+
+        self.is_trained = True
+
+    def classify(self, inputs):
         """Method to classify an entry.
         Args:
             inputs: It is a list tha contains the inputs values.
         Returns:
             It returns an integer.
         """
-        inputs = np.array([self.bias] + inputs)
-        summatory = sum(inputs * self.weights)
+        if self.is_trained:
+            inputs = np.array([self.bias] + inputs)
+            summatory = sum(inputs * self.weights)
 
-        return hardlim(summatory)
-
-
+            return hardlim(summatory)
+        else:
+            raise PerceptronError(PERCEPTRON_IS_NOT_TRAINED)
