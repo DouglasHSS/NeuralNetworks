@@ -57,7 +57,7 @@ class Perceptron(object):
                 DatasetError: If `training_set_portion` is not between 0 and 1.
         """
         if not 0 < training_set_portion <= 1:
-            raise PerceptronError()
+            raise PerceptronError(TRAINING_SET_PORTION_ERROR)
 
     # ###################
     # # PRIVATE METHODS #
